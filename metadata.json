@@ -1,0 +1,6 @@
+{
+  "name": "المعمار الشجري - د. محمد المحطوري",
+  "description": "أداة توليد تقرير هيكل المجلدات وشجرة الملفات بنقرة واحدة بصيغ متعددة (HTML, Markdown, JSON, TXT)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
