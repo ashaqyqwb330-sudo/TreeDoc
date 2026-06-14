@@ -47,104 +47,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.theme.MyApplicationTheme
 
 // ==================== Custom Self-Contained Vector Icons ====================
-val CustomPhoneAndroidIcon: ImageVector
-    get() = ImageVector.Builder(
-        name = "CustomPhoneAndroid",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
-    ).apply {
-        path(fill = SolidColor(Color(0xFF6B7280))) {
-            moveTo(16f, 1f)
-            lineTo(8f, 1f)
-            curveTo(6.9f, 1f, 6f, 1.9f, 6f, 3f)
-            lineTo(6f, 21f)
-            curveTo(6f, 22.1f, 6.9f, 23f, 8f, 23f)
-            lineTo(16f, 23f)
-            curveTo(17.1f, 23f, 18f, 22.1f, 18f, 21f)
-            lineTo(18f, 3f)
-            curveTo(18f, 1.9f, 17.1f, 1f, 16f, 1f)
-            close()
-            moveTo(12f, 21f)
-            curveTo(11.17f, 21f, 10.5f, 20.33f, 10.5f, 19.5f)
-            curveTo(10.5f, 18.67f, 11.17f, 18f, 12f, 18f)
-            curveTo(12.83f, 18f, 13.5f, 18.67f, 13.5f, 19.5f)
-            curveTo(13.5f, 20.33f, 12.83f, 21f, 12f, 21f)
-            close()
-            moveTo(16f, 16f)
-            lineTo(8f, 16f)
-            lineTo(8f, 4f)
-            lineTo(16f, 4f)
-            lineTo(16f, 16f)
-            close()
-        }
-    }.build()
-
-val CustomSdCardIcon: ImageVector
-    get() = ImageVector.Builder(
-        name = "CustomSdCard",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
-    ).apply {
-        path(fill = SolidColor(Color(0xFF6B7280))) {
-            moveTo(18f, 20f)
-            lineTo(18f, 4f)
-            curveTo(18f, 2.9f, 17.1f, 2f, 16f, 2f)
-            lineTo(12f, 2f)
-            lineTo(8f, 6f)
-            lineTo(8f, 20f)
-            curveTo(8f, 21.1f, 8.9f, 22f, 10f, 22f)
-            lineTo(16f, 22f)
-            curveTo(17.1f, 22f, 18f, 21.1f, 18f, 20f)
-            close()
-            moveTo(10f, 8f)
-            lineTo(12f, 8f)
-            lineTo(12f, 4f)
-            lineTo(10f, 4f)
-            lineTo(10f, 8f)
-            close()
-            moveTo(13f, 8f)
-            lineTo(15f, 8f)
-            lineTo(15f, 4f)
-            lineTo(13f, 4f)
-            lineTo(13f, 8f)
-            close()
-        }
-    }.build()
-
-val CustomUsbIcon: ImageVector
-    get() = ImageVector.Builder(
-        name = "CustomUsb",
-        defaultWidth = 24.dp,
-        defaultHeight = 24.dp,
-        viewportWidth = 24f,
-        viewportHeight = 24f
-    ).apply {
-        path(fill = SolidColor(Color(0xFF6B7280))) {
-            moveTo(15f, 7f)
-            lineTo(9f, 7f)
-            lineTo(9f, 3f)
-            curveTo(9f, 1.9f, 9.9f, 1f, 11f, 1f)
-            lineTo(13f, 1f)
-            curveTo(14.1f, 1f, 15f, 1.9f, 15f, 3f)
-            lineTo(15f, 7f)
-            close()
-            moveTo(16f, 8f)
-            lineTo(8f, 8f)
-            curveTo(6.9f, 8f, 6f, 8.9f, 6f, 10f)
-            lineTo(6f, 21f)
-            curveTo(6f, 22.1f, 6.9f, 23f, 8f, 23f)
-            lineTo(16f, 23f)
-            curveTo(17.1f, 23f, 18f, 22.1f, 18f, 21f)
-            lineTo(18f, 10f)
-            curveTo(18f, 8.9f, 17.1f, 8f, 16f, 8f)
-            close()
-        }
-    }.build()
-
 val CustomFolderIcon: ImageVector
     get() = ImageVector.Builder(
         name = "CustomFolder",
@@ -956,7 +858,7 @@ fun StorageAndFolderSelectionCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = CustomPhoneAndroidIcon,
+                            imageVector = Icons.Default.PhoneAndroid,
                             contentDescription = null,
                             tint = if (selectedSourceType == StorageType.INTERNAL) MaterialTheme.colorScheme.primary
                                    else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -997,7 +899,7 @@ fun StorageAndFolderSelectionCard(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = CustomSdCardIcon,
+                                imageVector = Icons.Default.SdCard,
                                 contentDescription = null,
                                 tint = if (selectedSourceType == StorageType.SD_CARD) MaterialTheme.colorScheme.primary
                                        else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1039,7 +941,7 @@ fun StorageAndFolderSelectionCard(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = CustomUsbIcon,
+                                imageVector = Icons.Default.Usb,
                                 contentDescription = null,
                                 tint = if (selectedSourceType == StorageType.USB_OTG) MaterialTheme.colorScheme.primary
                                        else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1118,9 +1020,9 @@ fun StorageAndFolderSelectionCard(
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = FontFamily.Monospace,
-                        textDirection = androidx.compose.ui.text.style.TextDirection.Ltr
+                        direction = androidx.compose.ui.unit.LayoutDirection.Ltr
                     ),
-                    placeholder = { Text("مثال: /storage/emulated/0/MyFolder", style = androidx.compose.ui.text.TextStyle(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr)) },
+                    placeholder = { Text("مثال: /storage/emulated/0/MyFolder", textDirection = androidx.compose.ui.text.style.TextDirection.Ltr) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
