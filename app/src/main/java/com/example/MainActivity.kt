@@ -488,16 +488,33 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
+                var showOnboarding by remember { mutableStateOf(false) }
+                val context = android.view.View(this).context // Simple safe context
+                LaunchedEffect(Unit) {
+                    val prefs = context.getSharedPreferences("TreeDocPrefs", Context.MODE_PRIVATE)
+                    showOnboarding = prefs.getBoolean("is_first_launch", true)
+                }
+
                 Scaffold(
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag("main_scaffold")
                 ) { innerPadding ->
-                    TreeDocMainScreen(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    )
+                    if (showOnboarding) {
+                        com.example.ui.OnboardingScreen(
+                            onDismiss = {
+                                val prefs = context.getSharedPreferences("TreeDocPrefs", Context.MODE_PRIVATE)
+                                prefs.edit().putBoolean("is_first_launch", false).apply()
+                                showOnboarding = false
+                            }
+                        )
+                    } else {
+                        TreeDocMainScreen(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        )
+                    }
                 }
             }
         }
@@ -510,6 +527,7 @@ fun TreeDocMainScreen(
     viewModel: TreeDocViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    var showCustomFileBrowser by remember { mutableStateOf(false) }
 
     // Observe StateFlow properties from ViewModel
     val selectedUri by viewModel.selectedDirectoryUri.collectAsState()
@@ -598,7 +616,7 @@ fun TreeDocMainScreen(
                 userShortcuts = userShortcuts,
                 viewModel = viewModel,
                 onBrowseFolder = {
-                    directoryPickerLauncher.launch(null)
+                    showCustomFileBrowser = true
                 }
             )
 
@@ -663,7 +681,12 @@ fun TreeDocMainScreen(
             // Integration Card 1: Total System File Access control
             SystemPermissionsCard(context = context, onRefresh = { })
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Integration Card 1.5: Floating Widget and Quick Settings Tile settings
+            FloatingWidgetAndTileConfigCard()
+
+            Spacer(modifier = Modifier.height(14.dp))
 
             // Integration Card 2: Interactive Cloud Mapped Syncer
             CloudSyncCard(context = context, successUri = successUri, viewModel = viewModel)
@@ -720,6 +743,17 @@ fun TreeDocMainScreen(
             ErrorResultDialog(
                 message = errorMsg ?: "",
                 onDismiss = { viewModel.clearResultState() }
+            )
+        }
+
+        if (showCustomFileBrowser) {
+            com.example.ui.CustomFileBrowserDialog(
+                initialPath = selectedDirectoryPath,
+                onDismiss = { showCustomFileBrowser = false },
+                onSelectFolder = { chosenPath ->
+                    viewModel.setDirectoryPath(chosenPath, context)
+                    showCustomFileBrowser = false
+                }
             )
         }
     }
@@ -858,7 +892,7 @@ fun StorageAndFolderSelectionCard(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            imageVector = Icons.Default.PhoneAndroid,
+                            imageVector = Icons.Default.Home,
                             contentDescription = null,
                             tint = if (selectedSourceType == StorageType.INTERNAL) MaterialTheme.colorScheme.primary
                                    else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -899,7 +933,7 @@ fun StorageAndFolderSelectionCard(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.Default.SdCard,
+                                imageVector = CustomFolderIcon,
                                 contentDescription = null,
                                 tint = if (selectedSourceType == StorageType.SD_CARD) MaterialTheme.colorScheme.primary
                                        else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -941,7 +975,7 @@ fun StorageAndFolderSelectionCard(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                imageVector = Icons.Default.Usb,
+                                imageVector = Icons.Default.Settings,
                                 contentDescription = null,
                                 tint = if (selectedSourceType == StorageType.USB_OTG) MaterialTheme.colorScheme.primary
                                        else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1020,9 +1054,9 @@ fun StorageAndFolderSelectionCard(
                     shape = RoundedCornerShape(16.dp),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = FontFamily.Monospace,
-                        direction = androidx.compose.ui.unit.LayoutDirection.Ltr
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Left
                     ),
-                    placeholder = { Text("مثال: /storage/emulated/0/MyFolder", textDirection = androidx.compose.ui.text.style.TextDirection.Ltr) },
+                    placeholder = { Text("مثال: /storage/emulated/0/MyFolder") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -1034,12 +1068,66 @@ fun StorageAndFolderSelectionCard(
                         IconButton(onClick = onBrowseFolder) {
                             Icon(
                                 imageVector = CustomFolderIcon,
-                                contentDescription = "Browse using Android Folder Picker",
+                                contentDescription = "Browse using Custom Folder Picker",
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
                 )
+            }
+
+            // Clipboard paste & Custom directory Browser Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clipData = clipboard.primaryClip
+                        if (clipData != null && clipData.itemCount > 0) {
+                            val pastedStr = clipData.getItemAt(0).text?.toString()?.trim() ?: ""
+                            if (pastedStr.isNotEmpty()) {
+                                viewModel.setDirectoryPath(pastedStr, context)
+                                Toast.makeText(context, "تم لصق المسار من الحافظة!", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(context, "الحافظة فارغة!", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier
+                        .height(36.dp)
+                        .weight(1f)
+                ) {
+                    Icon(imageVector = Icons.Default.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("لصق من الحافظة 📋", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = onBrowseFolder,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier
+                        .height(36.dp)
+                        .weight(1f)
+                ) {
+                    Icon(imageVector = CustomFolderIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("فتح في المستكشف 🔍", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -1620,6 +1708,156 @@ fun ToggleRowItem(
             onCheckedChange = onCheckedChange,
             modifier = Modifier.minimumInteractiveComponentSize()
         )
+    }
+}
+
+@Composable
+fun FloatingWidgetAndTileConfigCard() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("TreeDocPrefs", Context.MODE_PRIVATE) }
+    
+    var isWidgetEnabled by remember { mutableStateOf(false) }
+    var tileBehavior by remember { mutableStateOf("open") } // "open" or "scan"
+    
+    LaunchedEffect(Unit) {
+        isWidgetEnabled = prefs.getBoolean("widget_enabled", false)
+        tileBehavior = prefs.getString("tile_behavior", "open") ?: "open"
+        
+        // Auto check overlay authorization syncing
+        if (isWidgetEnabled && !android.provider.Settings.canDrawOverlays(context)) {
+            isWidgetEnabled = false
+            prefs.edit().putBoolean("widget_enabled", false).apply()
+        }
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("floating_widget_and_tile_config_card"),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "النافذة العائمة وبلاطة التحكم السريع 🖲️",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            // Toggle floating widget service
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                    Text(text = "تمكين النافذة العائمة 🌳", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                    Text(text = "عرض فقاعة دائرية عائمة فوق جميع التطبيقات لبدء المسح السريع أو فتح التطبيق.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(
+                    checked = isWidgetEnabled,
+                    onCheckedChange = { isEnabled ->
+                        if (isEnabled) {
+                            if (android.provider.Settings.canDrawOverlays(context)) {
+                                prefs.edit().putBoolean("widget_enabled", true).apply()
+                                isWidgetEnabled = true
+                                context.startService(Intent(context, FloatingWidgetService::class.java))
+                                Toast.makeText(context, "تم تشغيل النافذة العائمة!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                val intent = Intent(
+                                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:${context.packageName}")
+                                )
+                                context.startActivity(intent)
+                                Toast.makeText(context, "يرجى منح إذن الظهور فوق التطبيقات بالأعلى أولاً للتشغيل.", Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            prefs.edit().putBoolean("widget_enabled", false).apply()
+                            isWidgetEnabled = false
+                            context.stopService(Intent(context, FloatingWidgetService::class.java))
+                            Toast.makeText(context, "تم إيقاف النافذة العائمة.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+
+            // Select Tile Behavior
+            Text(
+                text = "سلوك بلاطة شريط الأدوات السريع (Quick settings tile) ⚡",
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+            Text(
+                text = "حدد الإجراء المتخذ عند النقر على بلاطة التطبيق في شريط الاختصارات العلوي لأندرويد:",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 10.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                val isLaunch = tileBehavior == "open"
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .background(
+                            color = if (isLaunch) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(9.dp)
+                        )
+                        .clickable {
+                            tileBehavior = "open"
+                            prefs.edit().putString("tile_behavior", "open").apply()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "فتح التطبيق المباشر",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = if (isLaunch) FontWeight.Bold else FontWeight.Normal
+                        ),
+                        color = if (isLaunch) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                val isScan = tileBehavior == "scan"
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .background(
+                            color = if (isScan) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(9.dp)
+                        )
+                        .clickable {
+                            tileBehavior = "scan"
+                            prefs.edit().putString("tile_behavior", "scan").apply()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "بدء مسح سريع صامت",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = if (isScan) FontWeight.Bold else FontWeight.Normal
+                        ),
+                        color = if (isScan) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
     }
 }
 

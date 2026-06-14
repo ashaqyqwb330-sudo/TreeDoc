@@ -299,6 +299,10 @@ object TreeReportGenerator {
                     )
                 }
             }
+        }
+        return node
+    }
+
     fun buildTreeFromFile(
         file: java.io.File,
         depth: Int,
