@@ -525,7 +525,7 @@ class TreeDocViewModel : ViewModel() {
 
                 val counter = java.util.concurrent.atomic.AtomicInteger(0)
 
-                val rootNode: TreeDocNode?
+                val rootNode: TreeReportGenerator.TreeDocNode?
                 val rootName: String
 
                 if (useFileApi) {
